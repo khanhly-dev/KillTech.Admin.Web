@@ -1,0 +1,15 @@
+@import './base.css';
+
+/* base color = #3c0668
+sub color = #a70404 
+main #050b49*/
+
+#app {
+  background-color: hsl(240, 11%, 96%);
+  font-weight: normal;
+}
+
+* {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 300;
+}
