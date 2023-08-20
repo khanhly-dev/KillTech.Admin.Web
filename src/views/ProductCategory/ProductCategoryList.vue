@@ -191,7 +191,7 @@ export default {
     </a-row>
 
     <!-- modal  -->
-    <a-modal :visible="openModal" title="Basic Modal" @ok="handleOk" @cancel="handleCancel">
+    <a-modal :visible="openModal" title="Thêm/sửa danh mục" @ok="handleOk" @cancel="handleCancel">
         <a-form :model="productCategory" name="basic" :label-col="{ span: 8 }" :wrapper-col="{ span: 16 }"
             autocomplete="off" @finish="onFinish" @finishFailed="onFinishFailed">
             <a-form-item label="Tên danh mục" name="name"
@@ -199,7 +199,7 @@ export default {
                 <a-input v-model:value="productCategory.name" />
             </a-form-item>
 
-            <a-form-item label="Tên danh mục" name="name"
+            <a-form-item label="Trạng thái" name="name"
                 :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
                 <a-radio-group v-model:value="productCategory.publish">
                     <a-radio :style="radioStyle" :value="true">Active</a-radio>

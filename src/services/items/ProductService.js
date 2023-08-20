@@ -2,8 +2,8 @@ import Base from '../MainService'
 const resources = 'Product'
 export default {
     //category---------------------------------------------------------------------
-    GetCategoryPaging(query) {
-        return Base.get(`${resources}/get-category-paging`, { params: query })
+    GetCategoryPaging(param) {
+        return Base.get(`${resources}/get-category-paging`, { params: param })
     },
     GetListParent() {
         return Base.get(`${resources}/get-list-parent`)
@@ -19,7 +19,27 @@ export default {
     },
     //-----------------------------------------------------------------------------
     //product----------------------------------------------------------------------
-    GetProductPaging(query) {
-        return Base.get(`${resources}/get-product-paging`, { params: query })
+    GetProductPaging(param) {
+        return Base.get(`${resources}/get-product-paging`, { params: param })
+    },
+    CreateProduct(param) {
+        return Base.post(`${resources}/create-product`, param)
+    },
+    UpdateProduct(param) {
+        return Base.put(`${resources}/update-product`, param)
+    },
+    DeleteProduct(param) {
+        return Base.delete(`${resources}/delete-product?Id=${param}`)
+    },
+    //-----------------------------------------------------------------------------
+    //image----------------------------------------------------------------------
+    GetProductImage(param) {
+        return Base.get(`${resources}/get-product-image`, { params: param })
+    },
+    CreateProductImage(param) {
+        return Base.post(`${resources}/create-product-image`, param)
+    },
+    DeleteProductImage(param) {
+        return Base.delete(`${resources}/delete-product-image?Id=${param}`)
     },
 }

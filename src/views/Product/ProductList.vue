@@ -41,18 +41,49 @@ const columns = [
         dataIndex: 'action',
     },
 ];
+const imageColumns = [
+    {
+        title: 'ID',
+        dataIndex: 'id',
+    },
+    {
+        title: 'Đường dẫn ảnh',
+        dataIndex: 'url',
+    },
+    {
+        title: 'Sản phẩm',
+        dataIndex: 'productId',
+    },
+    {
+        title: 'Trạng thái',
+        dataIndex: 'publish',
+    },
+    {
+        title: 'Ảnh chính',
+        dataIndex: 'isBase',
+    },
+    {
+        title: 'Thao tác',
+        dataIndex: 'action',
+    },
+]
 export default {
     data() {
         return {
             keyword: '',
             columns,
+            imageColumns,
             productList: {
                 items: []
             },
             currentPage: 1,
             openModal: false,
-            productProduct: {},
-            parentProductOptions: []
+            openDraw: false,
+            product: {},
+            parentProductOptions: [],
+            listImage: [],
+            image : {},
+            openModalImage: false
         }
 
     },
@@ -72,27 +103,75 @@ export default {
         async getListCategory() {
             const data = await ProductApi.GetListParent();
             if (data != null) {
-                this.parentProductOptions = [
-                    { value: 0, label: 'Không có' },
-                    ...data.data
-                ]
+                this.parentProductOptions = data.data
             }
         },
 
+        async getListImage(productId) {
+            var param = {
+                productId: productId
+            }
+            const data = await ProductApi.GetProductImage(param);
+            if (data != null) {
+                this.listImage = data.data.map(x => {
+                    return {
+                        id: x.id,
+                        url: x.url.length >= 50 ? x.url.slice(0, 50) + ' . . . . .' : x.url,
+                        productId: x.productId,
+                        publish: x.publish,
+                        isBase: x.isBase
+                    }
+                })
+            }
+        },
+
+        deleteProductImage(imageId) {
+            ProductApi.DeleteProductImage(imageId).then(x => {
+                if (x.statusCode == 0) {
+                    message.success(x.message);
+                }
+                else {
+                    message.error(x.message);
+                }
+                this.getListImage(this.product.id)
+            });
+        },
+
+        createImage(){
+            this.image.productId = this.product.id
+            var param = {
+                ProductImage: { ...this.image }
+            }
+            ProductApi.CreateProductImage(param).then(x => {
+                if (x.statusCode == 0) {
+                    message.success(x.message);
+                }
+                else {
+                    message.error(x.message);
+                }
+                this.getListImage(this.product.id);
+            })
+        },
+
         showModal(type, record) {
+            this.modalType = type;
             this.openModal = true;
             if (type == 'create') {
-                this.productProduct = {}
+                this.product = {}
             }
             if (type == 'update') {
-                this.productProduct = { ...record }
+                this.product = { ...record }
             }
 
+        },
+
+        showModalImage() {
+            this.openModalImage = true;
         },
 
         createProduct() {
             var param = {
-                ProductProduct: { ...this.productProduct }
+                Product: { ...this.product }
             }
             ProductApi.CreateProduct(param).then(x => {
                 this.GetProduct(this.currentPage, 10)
@@ -107,7 +186,7 @@ export default {
 
         updateProduct() {
             var param = {
-                ProductProduct: { ...this.productProduct }
+                Product: { ...this.product }
             }
             ProductApi.UpdateProduct(param).then(x => {
                 this.GetProduct(this.currentPage, 10)
@@ -121,7 +200,6 @@ export default {
         },
 
         deleteProduct(productId) {
-            console.log(productId)
             ProductApi.DeleteProduct(productId).then(x => {
                 if (x.statusCode == 0) {
                     message.success(x.message);
@@ -131,14 +209,13 @@ export default {
                 }
                 this.GetProduct(this.currentPage, 10)
             });
-
         },
 
         handleOk() {
             this.openModal = false;
             //create
-            if (this.productProduct.id == null) {
-                this.createProduct()
+            if (this.product.id == null) {
+                this.createProduct();
             }
             //update
             else {
@@ -148,10 +225,28 @@ export default {
 
         handleCancel() {
             this.openModal = false;
+            this.product = {};
+        },
+
+        handleOkImage() {
+            this.openModalImage = false;
+            this.createImage();
+        },
+
+        handleCancelImage() {
+            this.openModalImage = false;
         },
 
         filterOption(input, option) {
             return option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0;
+        },
+        async showDrawer(product) {
+            this.openDraw = true;
+            this.product = { ...product }
+            await this.getListImage(product.id);
+        },
+        closeDraw() {
+            this.openDraw = false;
         }
     },
     async created() {
@@ -187,12 +282,14 @@ export default {
                         <a-popconfirm title="Bạn có chắc chắn muốn xoá?" @confirm="deleteProduct(record.id)">
                             <a-button type="primary" danger>Xoá</a-button>
                         </a-popconfirm>
-                        <a-button type="default" >Thêm ảnh</a-button>
+                        <a-button type="default" @click="showDrawer(record)">Thêm ảnh</a-button>
                     </div>
 
                     <div v-if="column.dataIndex == 'publish'">
-                        <PublishStatus type="active" v-if="record.publish == true"/><span v-if="record.publish == true"> Active</span>
-                        <PublishStatus type="inactive" v-if="record.publish == false"/><span v-if="record.publish == false"> Inactive</span>
+                        <PublishStatus type="active" v-if="record.publish == true" /><span v-if="record.publish == true">
+                            Active</span>
+                        <PublishStatus type="inactive" v-if="record.publish == false" /><span
+                            v-if="record.publish == false"> Inactive</span>
                     </div>
                 </template>
             </a-table>
@@ -203,32 +300,101 @@ export default {
         </a-col>
     </a-row>
 
-    <!-- modal  -->
-    <a-modal :visible="openModal" title="Basic Modal" @ok="handleOk" @cancel="handleCancel">
-        <a-form :model="productProduct" name="basic" :label-col="{ span: 8 }" :wrapper-col="{ span: 16 }" autocomplete="off"
+    <!-- modal create product -->
+    <a-modal :visible="openModal" title="Thêm/sửa sản phẩm" @ok="handleOk" @cancel="handleCancel">
+        <a-form :model="product" name="basic" :label-col="{ span: 8 }" :wrapper-col="{ span: 16 }" autocomplete="off"
             @finish="onFinish" @finishFailed="onFinishFailed">
-            <a-form-item label="Tên danh mục" name="name"
+            <a-form-item label="Tên sản phẩm" name="name"
                 :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
-                <a-input v-model:value="productProduct.name" />
+                <a-input v-model:value="product.name" />
             </a-form-item>
 
-            <a-form-item label="Tên danh mục" name="name"
-                :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
-                <a-radio-group v-model:value="productProduct.publish">
+            <a-form-item label="Mã sản phẩm" name="code" :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+                <a-input v-model:value="product.code" />
+            </a-form-item>
+
+            <a-form-item label="Trạng thái" name="name" :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+                <a-radio-group v-model:value="product.publish">
                     <a-radio :style="radioStyle" :value="true">Active</a-radio>
                     <a-radio :style="radioStyle" :value="false">InActive</a-radio>
                 </a-radio-group>
             </a-form-item>
 
-            <a-form-item label="Danh mục cha" name="paretnId"
+            <a-form-item label="Danh mục" name="categoryId"
                 :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
-                <a-select v-model:value="productProduct.paretnId" show-search :options="parentProductOptions"
+                <a-select v-model:value="product.categoryId" show-search :options="parentProductOptions"
                     :filter-option="filterOption" @change="parentCategroyChange">
                 </a-select>
             </a-form-item>
 
-            <a-form-item label="Icon hiển thị" name="paretnId">
-                <a-input v-model:value="productProduct.keyIcon" />
+            <a-form-item label="Giá" name="price" :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+                <a-input-number v-model:value="product.price" :min="1" :max="9999999999999" style="width: 100%;" />
+            </a-form-item>
+
+            <a-form-item label="Giá khuyến mãi" name="promotionPrice"
+                :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+                <a-input-number v-model:value="product.promotionPrice" :min="1" :max="9999999999999" style="width: 100%;" />
+            </a-form-item>
+
+            <a-form-item label="thứ tự hiển thị" name="sortOrder"
+                :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+                <a-input-number v-model:value="product.sortOrder" :min="1" :max="9999999999999" style="width: 100%;" />
+            </a-form-item>
+        </a-form>
+    </a-modal>
+
+    <!-- modal list image -->
+    <a-drawer :visible="openDraw" class="custom-class" root-class-name="root-class-name" title="Thêm/xoá ảnh" :width="1000"
+        @close="closeDraw" placement="right" @after-open-change="afterOpenChange">
+        <a-button type="primary" @click="showModalImage()">Thêm</a-button><br><br>
+        <a-table :columns="imageColumns" :data-source="listImage" bordered class="basic-table" :pagination="false">
+            <template #bodyCell="{ column, text, record }">
+                <span v-if="column.dataIndex != 'publish' && column.dataIndex != 'isBase' && column.dataIndex != 'productId'">{{ text }}</span>
+
+                <span v-if="column.dataIndex == 'productId'">{{ product.name }}</span>
+
+                <div v-if="column.dataIndex == 'action'">
+                    <a-popconfirm title="Bạn có chắc chắn muốn xoá?" @confirm="deleteProductImage(record.id)">
+                        <a-button type="primary" danger>Xoá</a-button>
+                    </a-popconfirm>
+                </div>
+
+                <div v-if="column.dataIndex == 'publish'">
+                    <PublishStatus type="active" v-if="record.publish == true" /><span v-if="record.publish == true">
+                    </span>
+                    <PublishStatus type="inactive" v-if="record.publish == false" /><span v-if="record.publish == false">
+                    </span>
+                </div>
+
+                <div v-if="column.dataIndex == 'isBase'">
+                    <PublishStatus type="active" v-if="record.publish == true" />
+                    <PublishStatus type="inactive" v-if="record.publish == false" />
+                </div>
+            </template>
+        </a-table>
+    </a-drawer>
+
+    <!-- modal create image -->
+    <a-modal :visible="openModalImage" title="Thêm/sửa sản phẩm" @ok="handleOkImage" @cancel="handleCancelImage">
+        <a-form :model="image" name="basic" :label-col="{ span: 8 }" :wrapper-col="{ span: 16 }" autocomplete="off"
+            @finish="onFinish" @finishFailed="onFinishFailed">
+            <a-form-item label="Đường dẫn ảnh" name="url"
+                :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+                <a-input v-model:value="image.url" />
+            </a-form-item>
+
+            <a-form-item label="Trạng thái" name="publish" :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+                <a-radio-group v-model:value="image.publish">
+                    <a-radio :style="radioStyle" :value="true">Active</a-radio>
+                    <a-radio :style="radioStyle" :value="false">InActive</a-radio>
+                </a-radio-group>
+            </a-form-item>
+
+            <a-form-item label="Đặt làm ảnh chính" name="isBase" :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+                <a-radio-group v-model:value="image.isBase">
+                    <a-radio :style="radioStyle" :value="true">Có</a-radio>
+                    <a-radio :style="radioStyle" :value="false">Không</a-radio>
+                </a-radio-group>
             </a-form-item>
         </a-form>
     </a-modal>
