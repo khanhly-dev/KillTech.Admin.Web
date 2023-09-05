@@ -1,6 +1,8 @@
 import Layout from '../layouts/Layout.vue'
 import ProductList from '../views/Product/ProductList.vue'
 import ProductCategopryList from '../views/ProductCategory/ProductCategoryList.vue'
+import Tag from '../views/Tag/Tag.vue'
+import Home from '../views/Home/Home.vue'
 
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -9,7 +11,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      component: Layout
+      component: Home
     },
     {
       path: '/product',
@@ -18,6 +20,10 @@ const router = createRouter({
     {
       path: '/category',
       component: ProductCategopryList
+    },
+    {
+      path: '/tag',
+      component: Tag
     },
   ]
 })

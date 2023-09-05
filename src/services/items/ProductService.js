@@ -8,6 +8,9 @@ export default {
     GetListParent() {
         return Base.get(`${resources}/get-list-parent`)
     },
+    GetProductHashMap() {
+        return Base.get(`${resources}/get-product-hashmap`)
+    },
     CreateCategory(param) {
         return Base.post(`${resources}/create-product-category`, param)
     },
@@ -41,5 +44,30 @@ export default {
     },
     DeleteProductImage(param) {
         return Base.delete(`${resources}/delete-product-image?Id=${param}`)
+    },
+    //-----------------------------------------------------------------------------
+    //tag----------------------------------------------------------------------
+    GetTag(param) {
+        return Base.get(`${resources}/get-tag`, { params: param })
+    },
+    CreateTag(param) {
+        return Base.post(`${resources}/create-tag`, param)
+    },
+    DeleteTag(param) {
+        return Base.delete(`${resources}/delete-tag?Id=${param}`)
+    },
+    //-----------------------------------------------------------------------------
+    //product tag----------------------------------------------------------------------
+    GetProductTag(param) {
+        return Base.get(`${resources}/get-product-tag`, { params: param })
+    },
+    GetProductByTag(param) {
+        return Base.get(`${resources}/get-product-by-tag`, { params: param })
+    },
+    CreateProductTag(param) {
+        return Base.post(`${resources}/create-product-tag`, param)
+    },
+    DeleteProductTag(param) {
+        return Base.delete(`${resources}/delete-product-tag?Id=${param}`)
     },
 }

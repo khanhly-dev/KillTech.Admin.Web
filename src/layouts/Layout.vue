@@ -37,6 +37,7 @@ export default {
                     </template>
                     <a-menu-item key="3"> <router-link to="/category">Phân loại sản phẩm</router-link></a-menu-item>
                     <a-menu-item key="4"> <router-link to="/product">Sản phẩm</router-link></a-menu-item>
+                    <a-menu-item key="5"> <router-link to="/tag">Tag sản phẩm</router-link></a-menu-item>
                 </a-sub-menu>
             </a-menu>
         </a-layout-sider>
