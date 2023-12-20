@@ -1,8 +1,10 @@
 <script>
-import { PlusOutlined } from '@ant-design/icons-vue';
+import { PlusOutlined, InboxOutlined, UploadOutlined } from '@ant-design/icons-vue';
 import ProductApi from '../../services/items/ProductService'
 import { message } from 'ant-design-vue';
 import PublishStatus from '../../components/PublishStatus.vue'
+import ProductInfoApi from '../../services/items/ProductInfoService'
+
 const columns = [
     {
         title: 'ID',
@@ -47,8 +49,8 @@ const imageColumns = [
         dataIndex: 'id',
     },
     {
-        title: 'Đường dẫn ảnh',
-        dataIndex: 'url',
+        title: 'Ảnh',
+        dataIndex: 'img',
     },
     {
         title: 'Sản phẩm',
@@ -66,13 +68,40 @@ const imageColumns = [
         title: 'Thao tác',
         dataIndex: 'action',
     },
-]
+];
+const infoColumns = [
+    {
+        title: 'ID',
+        dataIndex: 'id',
+    },
+    {
+        title: 'Tên thông số',
+        dataIndex: 'key',
+    },
+    {
+        title: 'Thông số',
+        dataIndex: 'value',
+    },
+    {
+        title: 'Thao tác',
+        dataIndex: 'action',
+    },
+];
+function getBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
 export default {
     data() {
         return {
             keyword: '',
             columns,
             imageColumns,
+            infoColumns,
             productList: {
                 items: []
             },
@@ -82,8 +111,13 @@ export default {
             product: {},
             parentProductOptions: [],
             listImage: [],
-            image : {},
-            openModalImage: false
+            image: {},
+            openModalImage: false,
+            fileList: [],
+            detailVisible: false,
+            infoList: [],
+            modalCreateDetail: false,
+            currentInfo: {}
         }
 
     },
@@ -116,7 +150,7 @@ export default {
                 this.listImage = data.data.map(x => {
                     return {
                         id: x.id,
-                        url: x.url.length >= 50 ? x.url.slice(0, 50) + ' . . . . .' : x.url,
+                        url: x.url,
                         productId: x.productId,
                         publish: x.publish,
                         isBase: x.isBase
@@ -137,7 +171,7 @@ export default {
             });
         },
 
-        createImage(){
+        createImage() {
             this.image.productId = this.product.id
             var param = {
                 ProductImage: { ...this.image }
@@ -151,6 +185,28 @@ export default {
                 }
                 this.getListImage(this.product.id);
             })
+        },
+
+        createImageFromUpload() {
+            var param = {
+                productId: this.product.id,
+                image: this.image.file,
+                isBase: this.image.isBase,
+                publish: this.image.publish
+            }
+            ProductApi.CreateProductImageFromUpload(param).then(x => {
+                if (x.statusCode == 0) {
+                    message.success(x.message);
+                }
+                else {
+                    message.error(x.message);
+                }
+                this.getListImage(this.product.id);
+            })
+        },
+
+        beforeUpload() {
+            this.image.file = this.fileList
         },
 
         showModal(type, record) {
@@ -230,7 +286,7 @@ export default {
 
         handleOkImage() {
             this.openModalImage = false;
-            this.createImage();
+            this.createImageFromUpload();
         },
 
         handleCancelImage() {
@@ -240,14 +296,75 @@ export default {
         filterOption(input, option) {
             return option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0;
         },
+
         async showDrawer(product) {
             this.openDraw = true;
             this.product = { ...product }
             await this.getListImage(product.id);
         },
+
         closeDraw() {
             this.openDraw = false;
-        }
+        },
+
+        async showDetail(product) {
+            this.detailVisible = true;
+            this.product = { ...product }
+            await this.getInfo(product.id);
+        },
+
+        closeDetail() {
+            this.detailVisible = false;
+        },
+
+        async getInfo(productId) {
+            var param = {
+                productId: productId
+            }
+            const data = await ProductInfoApi.GetInfo(param);
+            if (data != null) {
+                this.infoList = data.data;
+            }
+        },
+
+        deleteInfo(infoId) {
+            ProductInfoApi.DeleteInfo(infoId).then(x => {
+                if (x.statusCode == 0) {
+                    message.success(x.message);
+                }
+                else {
+                    message.error(x.message);
+                }
+                this.getInfo(this.product.id)
+            });
+        },
+
+        createInfo() {
+            this.currentInfo.productId = this.product.id
+            var param = {
+                PInfo: { ...this.currentInfo }
+            }
+            ProductInfoApi.CreateInfo(param).then(x => {
+                this.getInfo(this.product.id)
+                if (x.statusCode == 0) {
+                    message.success(x.message);
+                }
+                else {
+                    message.error(x.message);
+                }
+            })
+        },
+
+        showCreateDetail(record) {
+            this.modalCreateDetail = true;
+        },
+        handleCreateDetailOk() {
+            this.modalCreateDetail = false;
+            this.createInfo();
+        },
+        handleCreateDetailCancel() {
+            this.modalCreateDetail = false;
+        },
     },
     async created() {
         await this.GetProduct(this.currentPage, 10);
@@ -255,6 +372,8 @@ export default {
     },
     components: {
         PublishStatus,
+        InboxOutlined,
+        UploadOutlined
     },
 }
 </script>
@@ -282,7 +401,8 @@ export default {
                         <a-popconfirm title="Bạn có chắc chắn muốn xoá?" @confirm="deleteProduct(record.id)">
                             <a-button type="primary" danger>Xoá</a-button>
                         </a-popconfirm>
-                        <a-button type="default" @click="showDrawer(record)">Thêm ảnh</a-button>
+                        <a-button type="default" @click="showDrawer(record)">Ảnh</a-button>
+                        <a-button type="default" @click="showDetail(record)">Chi tiết</a-button>
                     </div>
 
                     <div v-if="column.dataIndex == 'publish'">
@@ -349,7 +469,9 @@ export default {
         <a-button type="primary" @click="showModalImage()">Thêm</a-button><br><br>
         <a-table :columns="imageColumns" :data-source="listImage" bordered class="basic-table" :pagination="false">
             <template #bodyCell="{ column, text, record }">
-                <span v-if="column.dataIndex != 'publish' && column.dataIndex != 'isBase' && column.dataIndex != 'productId'">{{ text }}</span>
+                <span
+                    v-if="column.dataIndex != 'publish' && column.dataIndex != 'isBase' && column.dataIndex != 'productId'">{{
+                        text }}</span>
 
                 <span v-if="column.dataIndex == 'productId'">{{ product.name }}</span>
 
@@ -357,6 +479,10 @@ export default {
                     <a-popconfirm title="Bạn có chắc chắn muốn xoá?" @confirm="deleteProductImage(record.id)">
                         <a-button type="primary" danger>Xoá</a-button>
                     </a-popconfirm>
+                </div>
+
+                <div v-if="column.dataIndex == 'img'">
+                    <img :src="record.url" alt="" style="width: 70px;">
                 </div>
 
                 <div v-if="column.dataIndex == 'publish'">
@@ -378,23 +504,66 @@ export default {
     <a-modal :visible="openModalImage" title="Thêm/sửa sản phẩm" @ok="handleOkImage" @cancel="handleCancelImage">
         <a-form :model="image" name="basic" :label-col="{ span: 8 }" :wrapper-col="{ span: 16 }" autocomplete="off"
             @finish="onFinish" @finishFailed="onFinishFailed">
-            <a-form-item label="Đường dẫn ảnh" name="url"
-                :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
-                <a-input v-model:value="image.url" />
+
+            <a-form-item label="Tải ảnh lên" name="url">
+                <a-upload v-model:file-list="fileList" name="file" @change="beforeUpload">
+                    <a-button>
+                        <upload-outlined></upload-outlined>
+                        Click to Upload
+                    </a-button>
+                </a-upload>
             </a-form-item>
 
-            <a-form-item label="Trạng thái" name="publish" :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+            <a-form-item label="Trạng thái" name="publish"
+                :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
                 <a-radio-group v-model:value="image.publish">
                     <a-radio :style="radioStyle" :value="true">Active</a-radio>
                     <a-radio :style="radioStyle" :value="false">InActive</a-radio>
                 </a-radio-group>
             </a-form-item>
 
-            <a-form-item label="Đặt làm ảnh chính" name="isBase" :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+            <a-form-item label="Đặt làm ảnh chính" name="isBase"
+                :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
                 <a-radio-group v-model:value="image.isBase">
                     <a-radio :style="radioStyle" :value="true">Có</a-radio>
                     <a-radio :style="radioStyle" :value="false">Không</a-radio>
                 </a-radio-group>
+            </a-form-item>
+
+
+        </a-form>
+    </a-modal>
+
+    <!-- list info -->
+    <a-drawer :visible="detailVisible" class="custom-class" root-class-name="root-class-name"
+        :title="'Thêm/xoá thông tin sản phẩm ('+ product.name+ ')'" :width="1000" @close="closeDetail" placement="right"
+        @after-open-change="afterOpenChange">
+        <a-button type="primary" @click="showCreateDetail(record)">Thêm</a-button>
+        <a-table :columns="infoColumns" :data-source="infoList.items" bordered class="basic-table" :pagination="false">
+            <template #bodyCell="{ column, text, record }">
+                <span>{{ text }}</span>
+                <div v-if="column.dataIndex == 'action'">
+                    <a-popconfirm title="Bạn có chắc chắn muốn xoá?" @confirm="deleteInfo(record.id)">
+                        <a-button type="primary" danger>Xoá</a-button>
+                    </a-popconfirm>
+                </div>
+            </template>
+        </a-table>
+        <br>
+    </a-drawer>
+
+     <!-- create info  -->
+     <a-modal :visible="modalCreateDetail" title="Thêm/sửa thông số" @ok="handleCreateDetailOk" @cancel="handleCreateDetailCancel">
+        <a-form :model="currentInfo" name="basic" :label-col="{ span: 8 }" :wrapper-col="{ span: 16 }" autocomplete="off"
+            @finish="onFinish" @finishFailed="onFinishFailed">
+
+            <a-form-item label="Tên thông số" name="key" :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+                <a-input v-model:value="currentInfo.key" />
+            </a-form-item>
+
+            <a-form-item label="Giá trị thông số" name="value"
+                :rules="[{ required: true, message: 'Giá trị này là bắt buộc!' }]">
+                <a-input v-model:value="currentInfo.value" />
             </a-form-item>
         </a-form>
     </a-modal>

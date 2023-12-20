@@ -8,11 +8,14 @@ import { RouterView } from 'vue-router'
 export default {
     data() {
         return {
-
+            fileList: [],
+            headers: {
+                authorization: 'authorization-text',
+            }
         };
     },
     methods: {
-
+       
     },
     components: {
 
@@ -38,6 +41,7 @@ export default {
                     <a-menu-item key="3"> <router-link to="/category">Phân loại sản phẩm</router-link></a-menu-item>
                     <a-menu-item key="4"> <router-link to="/product">Sản phẩm</router-link></a-menu-item>
                     <a-menu-item key="5"> <router-link to="/tag">Tag sản phẩm</router-link></a-menu-item>
+                    <a-menu-item key="6"> <router-link to="/bill">Hoá đơn</router-link></a-menu-item>
                 </a-sub-menu>
             </a-menu>
         </a-layout-sider>

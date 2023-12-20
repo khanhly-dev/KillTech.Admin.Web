@@ -3,6 +3,7 @@ import ProductList from '../views/Product/ProductList.vue'
 import ProductCategopryList from '../views/ProductCategory/ProductCategoryList.vue'
 import Tag from '../views/Tag/Tag.vue'
 import Home from '../views/Home/Home.vue'
+import Bill from '../views/Bill/Bill.vue'
 
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -24,6 +25,10 @@ const router = createRouter({
     {
       path: '/tag',
       component: Tag
+    },
+    {
+      path: '/bill',
+      component: Bill
     },
   ]
 })

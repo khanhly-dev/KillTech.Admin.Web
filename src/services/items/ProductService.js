@@ -42,32 +42,14 @@ export default {
     CreateProductImage(param) {
         return Base.post(`${resources}/create-product-image`, param)
     },
+    CreateProductImageFromUpload(param) {
+        return Base.post(`${resources}/create-product-image-from-upload`, param, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+    },
     DeleteProductImage(param) {
         return Base.delete(`${resources}/delete-product-image?Id=${param}`)
-    },
-    //-----------------------------------------------------------------------------
-    //tag----------------------------------------------------------------------
-    GetTag(param) {
-        return Base.get(`${resources}/get-tag`, { params: param })
-    },
-    CreateTag(param) {
-        return Base.post(`${resources}/create-tag`, param)
-    },
-    DeleteTag(param) {
-        return Base.delete(`${resources}/delete-tag?Id=${param}`)
-    },
-    //-----------------------------------------------------------------------------
-    //product tag----------------------------------------------------------------------
-    GetProductTag(param) {
-        return Base.get(`${resources}/get-product-tag`, { params: param })
-    },
-    GetProductByTag(param) {
-        return Base.get(`${resources}/get-product-by-tag`, { params: param })
-    },
-    CreateProductTag(param) {
-        return Base.post(`${resources}/create-product-tag`, param)
-    },
-    DeleteProductTag(param) {
-        return Base.delete(`${resources}/delete-product-tag?Id=${param}`)
     },
 }
